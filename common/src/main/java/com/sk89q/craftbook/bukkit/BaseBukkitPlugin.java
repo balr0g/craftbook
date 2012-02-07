@@ -26,7 +26,13 @@ import java.util.logging.Logger;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.getspout.spoutapi.player.BiomeManager;
+import org.getspout.spoutapi.SpoutManager;
+
+
 import com.sk89q.wepif.PermissionsResolverManager;
 import com.sk89q.craftbook.LocalPlayer;
 
@@ -46,7 +52,13 @@ public abstract class BaseBukkitPlugin extends JavaPlugin {
      * Logger for messages.
      */
     protected static final Logger logger = Logger.getLogger("Minecraft.CraftBook");
-
+    
+    /**
+     * Do we have SpoutPlugin
+     */
+    private boolean useSpout = false;
+    private BiomeManager biomeMgr;
+    
     /**
      * Called on load.
      */
@@ -65,6 +77,24 @@ public abstract class BaseBukkitPlugin extends JavaPlugin {
         // Make the data folder for the plugin where configuration files
         // and other data files will be stored
         getDataFolder().mkdirs();
+        
+        // Load Spout
+        PluginManager pmgr = getServer().getPluginManager();
+        Plugin spout = pmgr.getPlugin("Spout");
+        if(spout != null) {
+        	if (spout.isEnabled()) {
+        		logger.info("Found Spout.");
+        	} else {
+        		logger.info("Spout was disabled, enabling it.");
+        		pmgr.enablePlugin(spout);
+        		biomeMgr = SpoutManager.getBiomeManager();
+        	}
+        	useSpout = true;
+        	
+        } else {
+        	logger.info("Spout is not installed, certain features will not work.");
+        	useSpout = false;
+        }
         
         // Prepare permissions
         PermissionsResolverManager.initialize(this);
@@ -167,5 +197,13 @@ public abstract class BaseBukkitPlugin extends JavaPlugin {
         }
         
         return false;
+    }
+    
+    public boolean usingSpout() {
+    	return this.useSpout;
+    }
+    
+    public BiomeManager getBiomeManager() {
+    	return this.biomeMgr;
     }
 }
