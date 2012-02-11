@@ -1,12 +1,17 @@
 package com.sk89q.craftbook.gates.weather;
 
 
+import java.util.List;
+
 import org.bukkit.Server;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Player;
+
 import com.sk89q.craftbook.ic.AbstractIC;
 import com.sk89q.craftbook.ic.AbstractICFactory;
 import com.sk89q.craftbook.ic.ChipState;
 import com.sk89q.craftbook.ic.IC;
+import com.sk89q.craftbook.ic.RestrictedIC;
 
 public class FalseWeather extends AbstractIC {
 
@@ -30,43 +35,38 @@ public class FalseWeather extends AbstractIC {
     @Override
     public void trigger(ChipState chip) {
     	//FIXME
-    	boolean tstorm = false;
-    	int duration = 24000;
-    	int thunderDuration = duration;
-    	try {
-    		String[] st = getSign().getLine(1).split("]");
-    		if(st.length > 1) tstorm = st[1].equalsIgnoreCase("r");
-    		duration = Integer.parseInt(getSign().getLine(2));
-    	} catch (Exception e) {}
-    	try {
-    		thunderDuration = Integer.parseInt(getSign().getLine(3));
-    	} catch (Exception e) {}
+    	if(chip.getInput(0)) 
+    	;
+    }
+    
+    
+    public boolean setPlayerWeather() {
+    	boolean isGroup = false;
+    	String name = "";
 
-    	if(duration > 24000) duration = 24000;
-    	if(duration < 1) duration = 1;
+    	try {
+    		String[] st = getSign().getLine(2).split(":");
+    		if(st.length > 1) {
+ //   			if(st[0].equals("g")) isGroup=true;
+    			if(st[0].equals("p")) isGroup=false;
+    			else return false;
+    			name = st[1];
+    		} else
+    			name = st[0];
+    	} catch(Exception e) { return false; }
     	
-    	if(thunderDuration > 24000) thunderDuration = 24000;
-    	if(thunderDuration < 1) thunderDuration = 1;
-
-    	
-    	if(chip.getInput(0)) {
-    		getSign().getWorld().setStorm(true);
-    		getSign().getWorld().setWeatherDuration(duration);
-    		if(tstorm) {
-    			getSign().getWorld().setThundering(true);
-    			getSign().getWorld().setThunderDuration(thunderDuration);
-    		}
-        	chip.setOutput(0, true);
-        }
-    	else {
-			getSign().getWorld().setThundering(false);
-    		getSign().getWorld().setStorm(false);
-    		chip.setOutput(0, false);
+    	List<Player> players = getSign().getWorld().getPlayers();
+    	for(Player p : players) {
+    		if(p.getName().equals(name))
+    			;
     	}
+    	
+    	
+    	//FIXME
+    	return false;
     }
 
-
-    public static class Factory extends AbstractICFactory {
+    public static class Factory extends AbstractICFactory implements RestrictedIC {
 
         protected boolean risingEdge;
 
