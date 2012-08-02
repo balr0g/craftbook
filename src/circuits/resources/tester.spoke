@@ -1,0 +1,16 @@
+
+class Choose
+
+	def static monkey(bool j,int c)
+		if j
+			switch c
+				1:
+					print("hey1")
+				2:
+					print("hey2")
+				3:
+					print("hey3")
+				4:
+					print("hey4")
+				5:
+					print("hey5")

@@ -1,0 +1,156 @@
+macro ;|&?&:&;=>|(p1,p2,p3)
+	if(p1) 
+		return p2
+	else 
+		return p3
+		
+ 
+
+class CW
+	 
+	def () 
+	world=create World()
+
+	Wide=10
+	Deep=4
+	Long=6
+	def createWorld(startX,startY,startZ) 
+		curX=startX==5?6:7
+		between(127,Deep-2)=>|(y_) 
+			makeItSpecial(curX,y_-1,startZ,curX+Long,y_-Deep,startZ+Wide,|(xI,x1,x2,y,y1,y2,zI,z1,z2)=>
+	
+				if y==y1
+					setBlock(Material.Glass,xI,y,zI)
+				else if y==y2
+					setBlock(Material.Glowstone,xI,y,zI)
+				else if zI==z2 || (zI==z1)
+					setBlock(Material.Glass,xI,y,zI)
+				else
+					setBlock(0,xI,y,zI)
+			)
+			curX=curX+Long
+
+
+	def makeIt(x1,y1,z1,x2,y2,z2,doit)
+		a1=between(x1,x2)
+		a2=between(y1,y2)
+		a3=between(z1,z2)
+		
+		a1=>|(x)
+			a2=>|(y)
+				a3=>|(z)
+					doit(x,y,z)
+
+	def makeItSpecial(x1,y1,z1,x2,y2,z2,doit)
+		a1=between(x1,x2)
+		a2=between(y1,y2)
+		a3=between(z1,z2)
+		
+		a1=>|(xC)
+			a2=>|(yC)
+				a3=>|(zC)
+					doit(xC,x1,x2,yC,y1,y2,zC,z1,z2)
+					      
+
+	def static createCave(int X,int Y,int Z,bool tick)
+		if tick 
+			print(tick+"  create")
+			global.caveWorld.createWorld(X,Y,Z)
+			
+
+
+	def setBlock(blockType,x,y,z)
+		world.getBlockAt(x,y,z).setType(blockType)
+
+	def setMakeSign(x,y,z,isBlack,posX,posY)
+		
+		world.getBlockAt(x,y,z).makeSign(["AAA|SPOKE","[MC5002]","Chess-playPiece",posX+"-"+posY+"-"+isBlack])
+
+	def setStoneButton(ind,x,y,z)
+		world.getBlockAt(x,y,z).makeStoneButton(ind)
+
+
+	def setBlockAndData(blockType,data,x,y,z)
+		world.getBlockAt(x,y,z).setTypeAndData(blockType,data)
+
+
+
+	def fillArea(type,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					blk.setType(type)
+
+	def fillAreaIf(type,typeIf,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					if typeIf==blk.getType()
+						blk.setType(type)
+	
+	
+	def fillAreaQuery(query,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					gm=query(x,y,z,blk)
+					if(gm!=blk)
+						blk.setType(gm)
+
+
+	def between(in1,in2)
+		arn=[]
+		if(in1>=in2)
+			(in1>=in2)=>
+				arn.add(in1)
+				in1=in1-1
+		else
+			(in1<=in2)=>
+				arn.add(in1)
+				in1=in1+1
+		return arn
+
+	def betweenSkip(in1,in2,skip)
+		arn=[]
+		if(in1>=in2)
+			(in1>=in2)=>
+				arn.add(in1)
+				in1=in1-skip
+		else
+			(in1<=in2)=>
+				arn.add(in1)
+				in1=in1+skip
+		return arn
+
+class Location
+	PosX=0
+	PosY=0
+	PosZ=0
+	def (xx,yy,zz)
+		PosX=xx
+		PosY=yy
+		PosZ=zz
+	
+
+global
+	caveWorld=create CW() 
+
+enum Direction 
+	North=0
+	West=1
+	South=2
+	East=3
+
+
+enum Material
+	Glowstone=89
+	Obsidian=49
+	Wool=35
+	Redstone=55
+	Sign=68
+	Snow=78
+	StoneButton=77
+	Glass=20

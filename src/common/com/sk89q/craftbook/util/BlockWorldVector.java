@@ -105,6 +105,10 @@ public class BlockWorldVector extends WorldVector {
                 && (int) other.getY() == (int) this.y
                 && (int) other.getZ() == (int) this.z;
     }
+    @Override
+    public String toString() {
+        return getWorld().getName()+" "+getX()+" "+getY()+" "+getZ(); 
+    }
 
     /**
      * Gets the hash code.

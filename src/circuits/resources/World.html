@@ -1,0 +1,230 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta name="generator" content="HTML Tidy for Linux/x86 (vers 11 February 2007), see www.w3.org" />
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.6.1.min.js">
+        </script>
+        <style type="text/css">
+            .T {
+                color: black;
+                font-weight: bold;
+            }
+            .V {
+                color: forestgreen;
+            }
+            .M {
+                color: blue;
+            }
+            .O {
+                color: darkgreen;
+                font-weight: bold;
+            }
+            .P {
+                color: blueviolet;
+                font-weight: bold;
+            }
+            .K {
+                color: darkred;
+            }
+            .B {
+                color: dodgerblue;
+            }
+            .S {
+                color: maroon;
+            }
+            .N {
+                color: darkmagenta;
+            }
+            .BreakPoint {
+                color: white;
+                font-weight: bold;
+                background-color: darkmagenta;
+            }
+            .E {
+                color: darkgoldenrod;
+                font-weight: bold;
+            }
+        </style>
+        <script type="text/javascript">
+            $(function() {
+                getCode();
+            }
+            );
+            shiftPress=false;
+            controlPress=false;
+            function detectspecialkeys(e) {
+                var evtobj=window.event? event : e;
+                if (evtobj.shiftKey) {
+                    if (evtobj.which==51)runDebug('stepInto');
+                    if (evtobj.which==52)runDebug('stepOver');
+                    if (evtobj.which==53)runDebug('stepOut');
+                    if (evtobj.which==54)runDebug('run');
+                    shiftPress=true;
+                }
+                if (evtobj.controlKey) {
+                    controlPress=true;
+                }
+            }
+            function detectspecialkeysUp(e) {
+                shiftPress=false;
+                controlPress=false;
+            }
+            document.onkeydown=detectspecialkeys;
+            document.onkeyup=detectspecialkeysUp;
+            String.prototype.startsWith =
+            function(str) {
+                return (this.indexOf(str)=== 0);
+            };
+            CurrentStackIndex=-1;
+            CurrentStack=null;
+            function getVariableValue(ob) {
+                if (ob.Type== "Int")return ob.IntVal;
+                if (ob.Type== "Bool")return ob.BoolVal;
+                if (ob.Type== "String")return ob.StringVal;
+                if (ob.Type== "Float")return ob.FloatVal;
+                if (ob.Type== "Array") {
+                    g= "[";
+                    if (ob.ArrayItems.length==0)return g+ "]";
+                    for (l=0;l<ob.ArrayItems.length;l++) {
+                        g+=getVariableValue(ob.ArrayItems [l])+ ", ";
+                    }
+                    g=g.substring(0, g.length-2)+ "]";
+                    return g;
+                }
+                return JSON.stringify(ob);
+            }
+            function getCode() {
+                $.ajax( {
+                    url: "http://localhost:1997/getapp/", success: function(data) {
+                        $('#tc').append(data);
+                        $('.V').hover(function(e) {
+                            if(CurrentStackIndex>-1 && this.className.startsWith("v")) {
+                                el=document.getElementById('float');
+                                el.style.display= 'inline';
+                                el.style.top=e.pageY+ 'px';
+                                el.style.left=e.pageX+ 'px';
+                                sm=getVariableValue(CurrentStack.Variables [this.className.split(" ")
+                                    [0].replace("v", "")]);
+                                el.innerText=sm;
+                            }
+                        }
+                        , function(e) {
+                            el=document.getElementById('float');
+                            el.style.display= 'none';
+                        }
+                        );
+                        setTimeout("runDebug('stepInto');", 1000);
+                    }
+                    , error: function(jqXHR, textStatus, errorThrown) {
+                        $('BODY').append(textStatus + " " + JSON.stringify(errorThrown)+ " " + JSON.stringify(jqXHR));
+                    }
+                }
+                );
+            }
+            function runDebug(state) {
+                $.ajax( {
+                    url: "http://localhost:1997/" +state+ '/', success: function(data) {
+                        var obj = jQuery.parseJSON(data);
+                        CurrentStackIndex=obj.Stack.length-1;
+                        STACK=obj.Stack;
+                        CurrentStack=obj.Stack [CurrentStackIndex];
+                        $('#stacktrace').empty();
+                        for(i = 0;
+                        i < obj.Stack .length;
+                        i++) {
+                            $('#stacktrace').append("<div onclick='dostackclick(" +i+ ");'>" +obj.Stack [i].MethodName+
+                                "</div>");
+                        }
+                        highlightTokens(obj.CurrentTokens);
+                        showVariables(CurrentStack);
+                    }
+                    , error: function(jqXHR, textStatus, errorThrown) {
+                        $('BODY').append(textStatus + " " + JSON.stringify(errorThrown)+ " " + JSON.stringify(jqXHR));
+                    }
+                }
+                );
+            }
+            
+            
+            
+            function execute(state) {
+            
+                $.ajax( {
+                    url: "http://localhost:1997/execute/"+state, success: function(data) {
+                     
+alert(data);
+                    }
+                    , error: function(jqXHR, textStatus, errorThrown) {
+                        $('BODY').append(textStatus + " " + JSON.stringify(errorThrown)+ " " + JSON.stringify(jqXHR));
+                    }
+                }
+                );
+            }
+            
+            
+            
+            function dostackclick(i) {
+                highlightTokens(STACK [i].SelectedTokens);
+                showVariables(STACK [i]);
+            }
+            function showVariables(stack) {
+              $('#vartrace').empty();
+                for (i = 0; i < stack.Variables.length; i++) {
+                    ggg=stack.VariableNames.length>i?stack.VariableNames [i]: "";
+                    if(ggg=="this") continue;
+                    $('#vartrace').append("<div>" +ggg+ " = " +getVariableValue(stack.Variables [i])+ "</div>");
+                }
+            }
+            function highlightTokens(data) {
+                v = data.split(",");
+                topp=0;
+                $("span").removeClass("BreakPoint");
+                for (i = 0; i < v.length; i++) {
+                    if (v [i].length > 0 && v [i]!= "token-1") {
+                        jd = $("." + v [i]);
+                        if (jd != null) {
+                            jd.addClass("BreakPoint");
+                            if (jd.offset()!= null) {
+                                topp=jd.offset().top-200;
+                                $('html, body').animate( {
+                                    scrollTop: jd.offset().top-200
+                                }
+                                , 0);
+                            }
+                        }
+                    }
+                }
+                el=document.getElementById('stacktrace');
+                el.style.top=topp;
+                el=document.getElementById('vartrace');
+                el.style.top=topp;
+            }
+            function load(name) {
+                if (name == "get")getCode();
+                if (name == "debug")runDebug();
+            }
+            function kd() {
+                if (event.keyCode == 13) {
+                    event.returnValue = false;
+                    event.cancel = true;
+                    ak = $("#piece").val();
+                    execute(ak);
+                }
+            }
+            
+        </script>
+    </head>
+    <body bgcolor="#FFFFFF" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+        <form>
+        <input type="text" id="piece" onkeydown="kd();"> </input>
+        
+            <div id="stacktrace" style="position:absolute;  height:120px; width:50%; background-color:grey; border-color:red; border-width:4px;">
+            </div>
+            <div id="vartrace" style="position:absolute;  height:120px; width:50%; left:50%; background-color:grey; border-color:red; border-width:4px;">
+            </div>
+            <span id="float" style="position:absolute; width:auto; height:20px; background-color:white; display:none; color:black; border-style:solid;border-width:2px; border-color:red;">
+            </span>
+            <div id="tc" style="font-family: Lucidatypewriter, monospace; font-size:11.5;">
+            </div><br />
+        </form>
+    </body>
+</html>        

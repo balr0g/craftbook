@@ -1,0 +1,194 @@
+
+class WG
+	 
+	def () 
+	 
+	def cw(startX,startY,startZ) 
+		print(startX+" a")
+		world=create World()
+		cf=world.getBlockAt(0,0,0).getType()
+		xInd=0
+		yInd=0
+		x=0
+		y=0
+		z=0
+		scale=10
+		allBlocks=[]
+		width=500
+		height=300
+		m=0
+		(x<height)=>
+			z=0
+			cj=[]
+			(z<width)=>
+				cj.add({ID=0,Y=0})
+				z=z+scale
+			allBlocks.add(cj)
+			x=x+scale
+		
+		x=0
+		(x<height)=>
+			z=0
+			yInd=0
+			(z<width)=>
+				print(x+" "+z)
+				sX=x
+				typs=[]
+				ys=[]
+				(sX-x<scale)=>
+					sZ=z
+					(sZ-z<scale)=>
+						curY=127
+						(curY>=0)=>
+							tp=world.getBlockAt(sX,curY,sZ).getType()
+							if tp>0
+								ys.add(curY)
+								typs.add(tp)
+								curY=-10
+							curY=curY-1
+						sZ=sZ+1
+					sX=sX+1
+				
+				avs=[]
+				jIndex=0
+				typs=>|(T)
+					j=avs.indexOf({Tid=T})
+					if j==-1
+						avs.add( {Tid=T, Number=1,Y=ys[jIndex]})
+					else
+						avs[j].Number=avs[j].Number+1
+					jIndex=jIndex+1
+				highest=0
+				cur=0
+				JY=0
+				avs=>|(a)
+					if a.Number>highest
+						cur=a.Tid
+						highest=a.Number
+						JY=a.Y
+				
+				allBlocks[xInd][yInd]={ID=cur,Y=JY}
+				
+				yInd=yInd+1
+				
+				z=z+scale
+			xInd=xInd+1
+			x=x+scale
+		
+		x=0
+		(x<allBlocks.length())=>
+			print("ASDASD")
+			curBlocks=allBlocks[x]
+			y=0
+			(y<curBlocks.length())=>
+				print(x+" "+y)
+				jf=(curBlocks[y].Y/31)
+				world.getBlockAt(startX+x,startY+jf,startZ+y).setType(curBlocks[y].ID)
+				jf=jf-1
+				(jf>=0)=>
+					world.getBlockAt(startX+x,startY+jf,startZ+y).setType(49)
+					jf=jf-1
+				y=y+1
+			x=x+1
+					      
+
+	def static createMap(int X,int Y,int Z,bool tick)
+		if tick 
+			print(tick+"  create")
+			global.worldGen.cw(X,Y,Z)
+
+	def setBlock(blockType,x,y,z)
+		world.getBlockAt(x,y,z).setType(blockType)
+
+	def setMakeSign(x,y,z,isBlack,posX,posY)
+		
+		world.getBlockAt(x,y,z).makeSign(["AAA|SPOKE","[MC5002]","Chess-playPiece",posX+"-"+posY+"-"+isBlack])
+
+	def setStoneButton(ind,x,y,z)
+		world.getBlockAt(x,y,z).makeStoneButton(ind)
+
+
+	def setBlockAndData(blockType,data,x,y,z)
+		world.getBlockAt(x,y,z).setTypeAndData(blockType,data)
+
+
+
+	def fillArea(type,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					blk.setType(type)
+
+	def fillAreaIf(type,typeIf,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					if typeIf==blk.getType()
+						blk.setType(type)
+	
+	
+	def fillAreaQuery(query,startX,startY,startZ,endX,endY,endZ)
+		between(startX,endX)=>|(x)
+			between(startY,endY)=>|(y)
+				between(startZ,endZ)=>|(z)
+					blk=world.getBlockAt(x,y,z)
+					gm=query(x,y,z,blk)
+					if(gm!=blk)
+						blk.setType(gm)
+
+
+	def between(in1,in2)
+		arn=[]
+		if(in1>=in2)
+			(in1>=in2)=>
+				arn.add(in1)
+				in1=in1-1
+		else
+			(in1<=in2)=>
+				arn.add(in1)
+				in1=in1+1
+		return arn
+
+	def betweenSkip(in1,in2,skip)
+		arn=[]
+		if(in1>=in2)
+			(in1>=in2)=>
+				arn.add(in1)
+				in1=in1-skip
+		else
+			(in1<=in2)=>
+				arn.add(in1)
+				in1=in1+skip
+		return arn
+
+class Location
+	PosX=0
+	PosY=0
+	PosZ=0
+	def (xx,yy,zz)
+		PosX=xx
+		PosY=yy
+		PosZ=zz
+	
+
+global
+	worldGen=create WG() 
+
+enum Direction 
+	North=0
+	West=1
+	South=2
+	East=3
+
+
+enum Material
+	Glowstone=89
+	Obsidian=49
+	Wool=35
+	Redstone=55
+	Sign=68
+	Snow=78
+	StoneButton=77
+	Glass=20

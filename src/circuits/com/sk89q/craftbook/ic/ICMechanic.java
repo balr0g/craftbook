@@ -14,20 +14,24 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package com.sk89q.craftbook.ic;
 
+import com.sk89q.craftbook.Spoke.ALH;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.Location;
 import com.sk89q.craftbook.PersistentMechanic;
 import com.sk89q.craftbook.SourcedBlockRedstoneEvent;
 import com.sk89q.craftbook.bukkit.BukkitUtil;
 import com.sk89q.craftbook.bukkit.CircuitsPlugin;
+import com.sk89q.craftbook.bukkit.CircuitsPlugin.MiniScheduler;
 import com.sk89q.craftbook.util.BlockWorldVector;
 import com.sk89q.worldedit.blocks.BlockID;
 
@@ -38,83 +42,87 @@ import com.sk89q.worldedit.blocks.BlockID;
  * @author sk89q
  */
 public class ICMechanic extends PersistentMechanic {
-    
-    protected CircuitsPlugin plugin;
-    protected String id;
-    protected ICFamily family;
-    protected IC ic;
-    
-    public ICMechanic(CircuitsPlugin plugin, String id, IC ic,
-            ICFamily family, BlockWorldVector pos) {
-        super(pos);
-        this.plugin = plugin;
-        this.id = id;
-        this.ic = ic;
-        this.family = family;
-    }
-    
-    @Override
-    public void onBlockRedstoneChange(final SourcedBlockRedstoneEvent event) {
-        BlockWorldVector pt = getTriggerPositions().get(0);
-        Block block = pt.getWorld().getBlockAt(BukkitUtil.toLocation(pt));
-        
-        if (block.getTypeId() == BlockID.WALL_SIGN) {
-            final BlockState state = block.getState();
-            
-            Runnable runnable = new Runnable() {
-                public void run() {
-                    // Assuming that the plugin host isn't going wonky here
-                    ChipState chipState = family.detect(
-                            BukkitUtil.toWorldVector(event.getSource()), (Sign) state);
-                    ic.trigger(chipState);
-                }
-            };
-            //FIXME: these should be registered with a global scheduler so we can end up with one runnable actually running per set of inputs in a given time window.
-            plugin.getServer().getScheduler().scheduleSyncDelayedTask(
-                    plugin, runnable, 2);
-        }
-    }
-    
-    @Override
-    public void unload() {
-        ic.unload();
-        //FIXME: cancel any scheduled updates.  (do them nao?) 
-    }
-    
-    @Override
-    public boolean isActive() {
-        BlockWorldVector pt = getTriggerPositions().get(0);
-        Block block = pt.getWorld().getBlockAt(BukkitUtil.toLocation(pt));
-        
-        if (block.getTypeId() == BlockID.WALL_SIGN) {
-            BlockState state = block.getState();
-            
-            if (state instanceof Sign) {
-                Sign sign = (Sign) state;
-                
-                Matcher matcher = ICMechanicFactory.codePattern.matcher(sign.getLine(1));
-                
-                if (!matcher.matches()) {
-                    return false;
-                } else if (!matcher.group(1).equalsIgnoreCase(id)) {
-                    return false;
-                } else if (ic instanceof PersistentIC) {
-                    return ((PersistentIC) ic).isActive();
-                } else {
-                    return false;
-                }
-            }
-        }
-        
-        return false;
-    }
-    
-    @Override
-    public List<BlockWorldVector> getWatchedPositions() {
-        // this seems a little strange; you'd think you'd be watching the input blocks, right?
-        // nope.  redstone events get reported to blocks adjacent to the redstone, 
-        // so we don't have to do that for any single-block IC.
-        return new ArrayList<BlockWorldVector>();
-    }
+
+	protected CircuitsPlugin plugin;
+	protected String id;
+	protected ICFamily family;
+	protected IC ic;
+
+	public ICMechanic(CircuitsPlugin plugin, String id, IC ic, ICFamily family, BlockWorldVector pos) {
+		super(pos);
+		this.plugin = plugin;
+		this.id = id;
+		this.ic = ic;
+		this.family = family;
+		ms=plugin.getScheduler();
+	}
+	public ICMechanic(CircuitsPlugin plugin, String id, IC ic, ICFamily family, BlockWorldVector ... pos) {
+		super(pos);
+		this.plugin = plugin;
+		this.id = id;
+		this.ic = ic;
+		this.family = family;
+		ms=plugin.getScheduler();
+	}
+
+	MiniScheduler ms;
+ 
+	@Override
+	public void onBlockRedstoneChange(final SourcedBlockRedstoneEvent event) {
+		BlockWorldVector pt = getTriggerPositions().get(0);
+		Block block = pt.getWorld().getBlockAt(BukkitUtil.toLocation(pt));
+
+		if (block.getTypeId() == BlockID.WALL_SIGN) {
+			final BlockState state = block.getState();
+
+			ChipState chipState = family.detect(BukkitUtil.toWorldVector(event.getSource()), (Sign) state);
+
+			ms.push(ic,chipState, (Sign) state);
+		}
+	}
+
+	@Override
+	public void unload() {
+		ic.unload();
+		// FIXME: cancel any scheduled updates. (do them nao?)
+	}
+
+	@Override
+	public boolean isActive() {
+		BlockWorldVector pt = getTriggerPositions().get(0);
+		Block block = pt.getWorld().getBlockAt(BukkitUtil.toLocation(pt));
+
+		if (block.getTypeId() == BlockID.WALL_SIGN) {
+			BlockState state = block.getState();
+
+			if (state instanceof Sign) {
+				Sign sign = (Sign) state;
+
+				Matcher matcher = ICMechanicFactory.codePattern.matcher(sign.getLine(1));
+
+				if (!matcher.matches()) {
+					return false;
+				} else if (!matcher.group(1).equalsIgnoreCase(id)) {
+					return false;
+				} else if (ic instanceof PersistentIC) {
+					return ((PersistentIC) ic).isActive();
+				} else {
+					return false;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public List<BlockWorldVector> getWatchedPositions() {
+		// this seems a little strange; you'd think you'd be watching the input
+		// blocks, right?
+		// nope. redstone events get reported to blocks adjacent to the
+		// redstone,
+		// so we don't have to do that for any single-block IC.
+		return new ArrayList<BlockWorldVector>();
+	}
 
 }
